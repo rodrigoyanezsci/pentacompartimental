@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KERR PROTOCOL | TOTAL ACCURACY</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff9d;
+            --dark-bg: #050510;
+            --panel-bg: rgba(10, 20, 30, 0.95);
+            --border-color: rgba(0, 243, 255, 0.3);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--dark-bg);
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; letter-spacing: 2px; text-transform: uppercase; margin-top: 0; }
+
+        /* Contenedor Principal */
+        .main-container {
+            max-width: 850px; /* Ancho optimizado para A4 */
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            position: relative;
+        }
+
+        /* --- PANELES (HUD) --- */
+        .hud-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            position: relative;
+            /* Bordes angulares */
+            clip-path: polygon(
+                15px 0, 100% 0, 
+                100% calc(100% - 15px), calc(100% - 15px) 100%, 
+                0 100%, 0 15px
+            );
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.05);
+            
+            /* IMPRESIÓN: Evitar cortes */
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .hud-panel::before {
+            content: "SYSTEM_ACTIVE";
+            position: absolute;
+            top: 5px; right: 10px;
+            font-size: 9px; color: var(--neon-cyan); opacity: 0.6;
+        }
+
+        /* --- INPUTS --- */
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        label {
+            display: block; font-size: 10px; color: var(--neon-cyan); margin-bottom: 3px; letter-spacing: 1px;
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            border: none; border-bottom: 2px solid #333;
+            color: #fff; padding: 5px 8px;
+            font-family: 'Orbitron'; font-size: 14px;
+            transition: 0.3s;
+        }
+        input:focus { border-bottom-color: var(--neon-cyan); background: rgba(0, 243, 255, 0.1); outline: none; }
+
+        /* --- FOTO --- */
+        .photo-upload {
+            border: 1px dashed var(--border-color);
+            padding: 10px; text-align: center; cursor: pointer;
+            margin-bottom: 15px; background: rgba(0,0,0,0.2);
+            height: 120px; display: flex; align-items: center; justify-content: center;
+        }
+        #preview-img { max-height: 100px; max-width: 100px; border-radius: 50%; border: 2px solid var(--neon-pink); display: none; box-shadow: 0 0 10px var(--neon-pink); }
+
+        /* --- BOTONES --- */
+        .cyber-btn {
+            background: var(--neon-cyan); color: #000;
+            border: none; padding: 12px; width: 100%;
+            font-family: 'Orbitron'; font-weight: bold; cursor: pointer;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), 0 100%);
+            margin-top: 10px; transition: 0.2s;
+        }
+        .cyber-btn:hover { background: #fff; box-shadow: 0 0 15px var(--neon-cyan); }
+        .btn-pdf { background: var(--neon-pink); color: white; }
+        .btn-wsp { background: var(--neon-green); color: black; }
+
+        /* --- RESULTADOS --- */
+        #results-section { display: none; border-color: var(--neon-pink); margin-top: 20px; }
+        
+        .metric-card {
+            background: rgba(255,255,255,0.03);
+            border-left: 3px solid var(--neon-cyan);
+            padding: 10px; margin-bottom: 8px;
+            page-break-inside: avoid;
+        }
+
+        .bar-bg { width: 100%; height: 6px; background: #222; margin-top: 5px; }
+        .bar-fill { height: 100%; width: 0%; transition: width 1s; box-shadow: 0 0 8px currentColor; }
+
+        .control-grid {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px;
+            margin-top: 15px; padding-top: 15px; border-top: 1px dashed #333;
+        }
+        
+        .control-box { text-align: center; background: rgba(0,0,0,0.3); padding: 5px; }
+        .control-val { font-family: 'Orbitron'; font-size: 1.1rem; display: block; }
+        .control-lbl { font-size: 0.7rem; color: #aaa; }
+
+        /* --- CLASES PARA PDF (MODO IMPRESIÓN) --- */
+        body.generating-pdf {
+            width: 800px; /* Ancho fijo A4 */
+            margin: 0; padding: 0;
+            overflow: visible;
+            height: auto;
+            background: #050510; /* Asegurar fondo negro */
+        }
+        
+        body.generating-pdf .main-container {
+            margin: 0;
+            width: 100%;
+            max-width: none;
+        }
+        
+        body.generating-pdf .no-print { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+<div class="main-container" id="app-container">
+    
+    <div class="hud-panel">
+        <h1 style="text-align:center; margin-bottom: 5px; color: #fff; text-shadow: 0 0 10px var(--neon-cyan);">KERR 5C PRO</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="photo-upload" style="flex: 0 0 100px;" onclick="document.getElementById('photoInput').click()">
+                <input type="file" id="photoInput" accept="image/*" hidden onchange="previewPhoto(event)">
+                <span id="upload-txt" style="font-size:0.7rem; color:var(--neon-cyan);">+ FOTO</span>
+                <img id="preview-img">
+            </div>
+            <div class="input-group" style="flex: 1;">
+                <div><label>SEXO</label><select id="sexo"><option value="Masculino">Masculino</option><option value="Femenino">Femenino</option></select></div>
+                <div><label>EDAD</label><input type="number" id="edad" placeholder="25"></div>
+                <div><label style="color:var(--neon-pink);">PESO (KG)</label><input type="number" id="peso" placeholder="75.5"></div>
+                <div><label>TALLA (CM)</label><input type="number" id="talla" placeholder="175"></div>
+                <div><label>T. SENTADO</label><input type="number" id="estatuSentado" placeholder="90"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hud-panel">
+        <h3 style="font-size: 0.9rem; color: var(--neon-cyan); border-bottom: 1px solid #333;">PLIEGUES (mm)</h3>
+        <div class="input-group">
+            <div><label>Triceps</label><input type="number" id="triceps"></div>
+            <div><label>Subescap.</label><input type="number" id="subescapular"></div>
+            <div><label>Supraesp.</label><input type="number" id="supraespinal"></div>
+            <div><label>Abdominal</label><input type="number" id="abdominal"></div>
+            <div><label>Muslo</label><input type="number" id="pliegueMuslo"></div>
+            <div><label>Pierna</label><input type="number" id="plieguePierna"></div>
+        </div>
+
+        <h3 style="font-size: 0.9rem; color: var(--neon-cyan); border-bottom: 1px solid #333; margin-top: 15px;">PERÍMETROS (cm)</h3>
+        <div class="input-group">
+            <div><label>Brazo Rel.</label><input type="number" id="brazo"></div>
+            <div><label>Antebrazo</label><input type="number" id="antebrazo"></div>
+            <div><label>Tórax</label><input type="number" id="torax"></div>
+            <div><label>Cintura</label><input type="number" id="cintura"></div>
+            <div><label>Muslo G.</label><input type="number" id="musloG"></div>
+            <div><label>Pierna</label><input type="number" id="pierna"></div>
+            <div><label>Cabeza</label><input type="number" id="cabeza"></div>
+        </div>
+
+        <h3 style="font-size: 0.9rem; color: var(--neon-cyan); border-bottom: 1px solid #333; margin-top: 15px;">DIÁMETROS (cm)</h3>
+        <div class="input-group">
+            <div><label>Biacromial</label><input type="number" id="biacromial"></div>
+            <div><label>Biiliocrestal</label><input type="number" id="biiliocrestal"></div>
+            <div><label>Húmero</label><input type="number" id="humero"></div>
+            <div><label>Fémur</label><input type="number" id="femur"></div>
+            <div><label>Tx AP</label><input type="number" id="toraxAP"></div>
+            <div><label>Tx Transv.</label><input type="number" id="toraxTrans"></div>
+        </div>
+    </div>
+
+    <button class="cyber-btn" id="btn-calc" onclick="calcular()">INICIAR ANÁLISIS</button>
+
+    <div id="results-section" class="hud-panel">
+        <h2 style="text-align:center; color: var(--neon-pink); margin-bottom: 20px;">DIAGNÓSTICO FINAL</h2>
+        
+        <div id="metrics-output">
+            </div>
+
+        <div class="control-grid">
+            <div class="control-box">
+                <span class="control-lbl">PESO REAL (Input)</span>
+                <span class="control-val" id="ctrl-real" style="color:#fff;">0 kg</span>
+            </div>
+            <div class="control-box">
+                <span class="control-lbl">SUMA FINAL (Output)</span>
+                <span class="control-val" id="ctrl-suma" style="color:var(--neon-green);">0 kg</span>
+            </div>
+            <div class="control-box">
+                <span class="control-lbl">AJUSTE APLICADO</span>
+                <span class="control-val" id="ctrl-error" style="color:var(--neon-pink);">0%</span>
+            </div>
+        </div>
+        <p style="text-align:center; font-size:0.7rem; color:#666; margin-top:5px;">
+            * Los valores han sido ajustados proporcionalmente para coincidir al 100% con el peso de báscula.
+        </p>
+
+        <div class="input-group no-print" style="margin-top: 20px;">
+            <button class="cyber-btn btn-pdf" onclick="descargarPDF()">DESCARGAR PDF</button>
+            <button class="cyber-btn btn-wsp" onclick="enviarWSP()">ENVIAR WHATSAPP</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LÓGICA DE CÁLCULO (AJUSTE 100% PESO REAL) ---
+    let lastResult = null;
+
+    function calcular() {
+        const _n = (id) => parseFloat(document.getElementById(id).value) || 0;
+        
+        // 1. Recolectar Datos Básicos
+        const peso = _n('peso');
+        const talla = _n('talla');
+        const edad = _n('edad');
+        const sexo = document.getElementById('sexo').value.toLowerCase();
+        
+        if (peso === 0 || talla === 0) { alert("Ingresa PESO y TALLA"); return; }
+        
+        const talla_cm = talla;
+        const PI = 3.1416;
+
+        // 2. Fórmulas KERR (Valores Brutos/Teóricos)
+        
+        // Piel
+        let C_sa = (edad < 12) ? 70.691 : (sexo === "masculino" ? 68.308 : 73.704);
+        let SA = C_sa * Math.pow(peso, 0.425) * Math.pow(talla_cm, 0.725);
+        let T_sk = (sexo === "masculino") ? 2.07 : 1.96;
+        let raw_Piel = (SA * (T_sk / 10) * 1.05) / 1000;
+
+        // Adiposa
+        let sumP = _n('triceps') + _n('subescapular') + _n('supraespinal') + _n('abdominal') + _n('pliegueMuslo') + _n('plieguePierna');
+        let ZG = ((sumP * (170.18/talla)) - 116.41) / 34.79;
+        let raw_Adip = ((ZG * 5.85) + 25.6) / Math.pow(170.18/talla, 3);
+
+        // Ósea
+        let ZCab = (_n('cabeza') - 56.0) / 1.44;
+        let mCab = (ZCab * 0.18) + 1.20;
+        let sumH = _n('biacromial') + _n('biiliocrestal') + (2*_n('humero')) + (2*_n('femur'));
+        let ZCue = ((sumH * (170.18/talla)) - 98.88) / 5.33;
+        let mCue = ((ZCue * 1.34) + 6.70) / Math.pow(170.18/talla, 3);
+        let raw_Osea = mCab + mCue;
+
+        // Muscular
+        let brC = _n('brazo') - (PI * (_n('triceps')/10));
+        let muC = _n('musloG') - (PI * (_n('pliegueMuslo')/10));
+        let piC = _n('pierna') - (PI * (_n('plieguePierna')/10));
+        let toC = _n('torax') - (PI * (_n('subescapular')/10));
+        let sumM = brC + _n('antebrazo') + muC + piC + toC;
+        let ZM = ((sumM * (170.18/talla)) - 207.21) / 13.74;
+        let raw_Musc = ((ZM * 5.4) + 24.5) / Math.pow(170.18/talla, 3);
+
+        // Residual
+        let ciC = _n('cintura') - (PI * (_n('abdominal')/10));
+        let sumR = _n('toraxAP') + _n('toraxTrans') + ciC;
+        let ZR = ((sumR * (89.92/_n('estatuSentado'))) - 109.35) / 7.08;
+        let raw_Res = ((ZR * 1.24) + 6.10) / Math.pow(89.92/_n('estatuSentado'), 3);
+
+        // 3. AJUSTE EXACTO AL PESO REAL
+        let pesoEstructurado = raw_Piel + raw_Adip + raw_Osea + raw_Musc + raw_Res;
+        
+        // FACTOR MÁGICO: Escala todo para que sume el peso real
+        let factor = peso / pesoEstructurado; 
+
+        let final = {
+            Muscular: raw_Musc * factor,
+            Adiposa:  raw_Adip * factor,
+            Osea:     raw_Osea * factor,
+            Piel:     raw_Piel * factor,
+            Residual: raw_Res * factor
+        };
+
+        // Guardamos para WSP
+        lastResult = { final, pesoReal: peso, errorOriginal: ((peso - pesoEstructurado)/peso)*100 };
+
+        // 4. Renderizar
+        const container = document.getElementById('metrics-output');
+        container.innerHTML = '';
+        
+        const colors = { Muscular: '#00f3ff', Adiposa: '#ff0055', Osea: '#9d46ff', Piel: '#ffff00', Residual: '#aaa' };
+        
+        for (let key in final) {
+            let kg = final[key];
+            let pct = (kg / peso) * 100;
+            let color = colors[key];
+            
+            container.innerHTML += `
+                <div class="metric-card">
+                    <div style="display:flex; justify-content:space-between; font-family:'Orbitron';">
+                        <span style="color:${color}; font-weight:bold;">${key.toUpperCase()}</span>
+                        <span>${kg.toFixed(2)} kg</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                        <span style="font-size:1.5rem; font-weight:bold;">${pct.toFixed(2)}%</span>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar-fill" style="width:${pct}%; background:${color}; color:${color}"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Footer Datos Control
+        document.getElementById('ctrl-real').innerText = peso.toFixed(2) + " kg";
+        
+        // Suma Final (Debe ser idéntica al peso)
+        let sumaFinal = Object.values(final).reduce((a,b)=>a+b, 0);
+        document.getElementById('ctrl-suma').innerText = sumaFinal.toFixed(2) + " kg";
+        
+        // Error Original (Informativo)
+        let diff = lastResult.errorOriginal;
+        let sign = diff > 0 ? "+" : "";
+        document.getElementById('ctrl-error').innerText = sign + diff.toFixed(2) + "%";
+
+        document.getElementById('results-section').style.display = 'block';
+        setTimeout(() => document.getElementById('results-section').scrollIntoView({behavior:'smooth'}), 100);
+    }
+
+    // --- PREVIEW FOTO ---
+    function previewPhoto(e) {
+        if(e.target.files[0]) {
+            let r = new FileReader();
+            r.onload = (ev) => {
+                let img = document.getElementById('preview-img');
+                img.src = ev.target.result;
+                img.style.display = 'block';
+                document.getElementById('upload-txt').style.display='none';
+            };
+            r.readAsDataURL(e.target.files[0]);
+        }
+    }
+
+    // --- PDF DEFINITIVO (SIN CORTES) ---
+    function descargarPDF() {
+        // 1. Preparar el cuerpo para impresión
+        document.body.classList.add('generating-pdf');
+        const btnCalc = document.getElementById('btn-calc');
+        btnCalc.classList.add('no-print');
+
+        const element = document.body; // Capturamos TODO el body para asegurar fondo negro
+
+        const opt = {
+            margin:       0,
+            filename:     'Kerr_Report_Full.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true, 
+                scrollY: 0,
+                windowWidth: 800 // Forzamos ancho de escritorio
+            },
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+
+        // 2. Generar y Restaurar
+        html2pdf().set(opt).from(element).save().then(() => {
+            document.body.classList.remove('generating-pdf');
+            btnCalc.classList.remove('no-print');
+        });
+    }
+
+    // --- WHATSAPP ---
+    function enviarWSP() {
+        if(!lastResult) return;
+        let d = lastResult.final;
+        let p = lastResult.pesoReal;
+        
+        let t = `*RESULTADOS KERR AJUSTADOS* 🧬\n`;
+        t += `Peso Real: ${p} kg\n\n`;
+        t += `💪 Músculo: ${d.Muscular.toFixed(2)}kg (${(d.Muscular/p*100).toFixed(2)}%)\n`;
+        t += `🥓 Adiposa: ${d.Adiposa.toFixed(2)}kg (${(d.Adiposa/p*100).toFixed(2)}%)\n`;
+        t += `🦴 Ósea: ${d.Osea.toFixed(2)}kg (${(d.Osea/p*100).toFixed(2)}%)\n`;
+        t += `🛡️ Piel: ${d.Piel.toFixed(2)}kg (${(d.Piel/p*100).toFixed(2)}%)\n`;
+        t += `🧩 Residual: ${d.Residual.toFixed(2)}kg (${(d.Residual/p*100).toFixed(2)}%)\n`;
+        t += `\n*Suma Total:* 100% Exacto`;
+
+        window.open(`https://wa.me/?text=${encodeURIComponent(t)}`, '_blank');
+    }
+</script>
+
+</body>
+</html>
